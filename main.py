@@ -119,4 +119,4 @@ if __name__ == '__main__':
     gmap.draw("map.html")
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
     webbrowser.get(chrome_path).open("file://G:/TRABAJO/Profesional/Python/inmoscrap/map.html")
-    # print(df.loc[df.loc[:, 'cluster'] == 26, 'precio'].to_list())
+    print(df.loc[df.loc[:, 'cluster'] == 26, 'precio'].to_list())
