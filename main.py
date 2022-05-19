@@ -1,13 +1,15 @@
 # This scrip scraps inmoclick.com
 import numpy as np
 from data_cure import cure_articles_df, representative_points
-from scraper import scrap_now
+from gmplots import gmplot_df
+from scraper import scrap_now, soup_to_df
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import matplotlib
 import gmplot
 import webbrowser
+from scipy.optimize import minimize
 
 
 if __name__ == '__main__':
@@ -25,44 +27,7 @@ if __name__ == '__main__':
           f"{sup_total_max}&precio_pesos_m2%5Bmin%5D=&precio_pesos_m2%5Bmax%5D=&precio_dolares_m2%5Bmin%5D=" \
           f"&precio_dolares_m2%5Bmax%5D=&expensas%5Bmin%5D=&expensas%5Bmax%5D= "
     soup = scrap_now(url, file_name='lotes.html', scrap_web=scrap_web)
-    articles = soup.find_all(name='article')
-    # print(articles[0])
-    articles_df_raw = pd.DataFrame(columns=['name', 'usr_id', 'prp_id', 'precio', 'sup_t',
-                                            'hasgeolocation', 'lat', 'lng', 'sup_c', 'href', 'luz', 'agua', 'gas'],
-                                   index=list(range(len(articles))))
-    for i, article in enumerate(articles):
-        articles_df_raw.iloc[i]['name'] = article.find('a').get('name')
-        articles_df_raw.iloc[i]['usr_id'] = article.get('usr_id')
-        articles_df_raw.iloc[i]['prp_id'] = article.get('prp_id')
-        articles_df_raw.iloc[i]['precio'] = article.get('precio')
-        articles_df_raw.iloc[i]['sup_t'] = article.get('sup_t')
-        articles_df_raw.iloc[i]['sup_c'] = article.get('sup_c')
-        articles_df_raw.iloc[i]['hasgeolocation'] = article.get('hasgeolocation')
-        articles_df_raw.iloc[i]['lng'] = article.get('lng')
-        articles_df_raw.iloc[i]['lat'] = article.get('lat')
-        for a in article.find_all('a'):
-            if a.get('href') is not None:
-                articles_df_raw.iloc[i]['href'] = a.get('href')
-        if article.find("div", {"class": "icon-luz disable"}):
-            articles_df_raw.iloc[i]['luz'] = False
-        elif article.find("div", {"class": "icon-luz"}):
-            articles_df_raw.iloc[i]['luz'] = True
-        else:
-            print(f'luz error***{article.find_all("div", {"class": "property-tags"})}')
-        if article.find("div", {"class": "icon-agua disable"}):
-            articles_df_raw.iloc[i]['agua'] = False
-        elif article.find("div", {"class": "icon-agua"}):
-            articles_df_raw.iloc[i]['agua'] = True
-        else:
-            print(f'agua error***{article.find_all("div", {"class": "property-tags"})}')
-        if article.find("div", {"class": "icon-gas disable"}):
-            articles_df_raw.iloc[i]['gas'] = False
-        elif article.find("div", {"class": "icon-gas"}):
-            articles_df_raw.iloc[i]['gas'] = True
-        else:
-            print(f'gas error***{article.find_all("div", {"class": "property-tags"})}')
-    pd.set_option('display.max_columns', None)
-    df = cure_articles_df(articles_df_raw)
+    df = soup_to_df(soup)
 
     kms_per_radian = 6371.0088
     radius_km = 0.5
@@ -73,50 +38,39 @@ if __name__ == '__main__':
     cluster_labels = db.labels_
     n_clusters = len(set(cluster_labels))
     df.insert(loc=len(df.iloc[0, :]), column='cluster', value=cluster_labels)
-    print(df.loc[:, ['precio', 'sup_t', 'lat', 'lng', 'luz', 'agua', 'gas', 'cluster']])
-    print(f'{n_clusters} clusters')
+    # print(df.loc[:, ['precio', 'sup_t', 'lat', 'lng', 'luz', 'agua', 'gas', 'cluster']])
+    # print(f'{n_clusters} clusters')
     # print(cluster_labels)
     rs = representative_points(df, cluster_labels, coords)
     # print(rs)
+    cluster_labels_list = list(set(cluster_labels))
+    gmplot_df(df, cluster_labels_list=cluster_labels_list)
+    # print(df.loc[df.loc[:, 'cluster'] == 26, 'precio'].to_list())
 
-    # fig, ax = plt.subplots(figsize=[10, 6])
-    # rs_scatter = ax.scatter(rs['lng'], rs['lat'], c='#99cc99', edgecolor='None', alpha=0.7, s=120)
-    # df_scatter = ax.scatter(df['lng'], df['lat'], c='k', alpha=0.9, s=3)
-    # ax.set_title('Full data set vs DBSCAN reduced set')
-    # ax.set_xlabel('Longitude')
-    # ax.set_ylabel('Latitude')
-    # ax.legend([df_scatter, rs_scatter], ['Full set', 'Reduced set'], loc='upper right')
-    # plt.show()
+#  Segmentation of geographical clusters by relative price
+#     Find the larguest cluster
+    cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
+    cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
+    largest_cluster = cluster_list[np.argmax(cluster_sizes)]
+    cluster = largest_cluster
     #
-    # fig = plt.figure()
-    # color_map = cm.get_cmap('hsv', n_clusters)
-    # color_map_list = [color_map(1.*i/n_clusters) for i in range(n_clusters)]
-    # for i in range(n_clusters):
-    #     plt.plot(df['lat'][cluster_labels == i], df['lng'][cluster_labels == i], linestyle='', marker='o',
-    #              color=color_map_list[i])
-    # plt.show()
+    # xy_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
+    #                         np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1))))
+    # z_cluster = (np.array(cluster.loc[:, 'precio'].values) / np.array(cluster.loc[:, 'sup_t'].values)).reshape((-1, 1))
+    #
+    # def piece_wise_constant(x_, y_, m, y_0, v_below, v_above):
+    #     if y_ < m*x_ + y_0:
+    #         return v_below
+    #     else:
+    #         return v_above
+    #
+    # def obj_fun(x, xy_cluster, z_cluster):
+    #     for xy_, z_ in zip(xy_cluster, z_cluster)
+    #     piece_wise_constant(x_, y_, m=x[0], y_0=x[1], v_below=x[2], v_above=[3])
+    #     np.apply_along_axis()
 
-    gmap = gmplot.GoogleMapPlotter(df.loc[0, 'lat'], df.loc[0, 'lng'], 13)
-    color_map = matplotlib.cm.get_cmap('hsv', n_clusters)
-    color_map_list = [matplotlib.colors.rgb2hex(color_map(1.*i/n_clusters)) for i in range(n_clusters)]
-    # color_map_list = list(matplotlib.colors.BASE_COLORS.keys())
-    for i in range(n_clusters):
-        # i_color = i - 8*(i // 8)
-        gmap.scatter(
-            lats=df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
-            lngs=df.loc[df.loc[:, 'cluster'] == i, 'lng'].to_list(),
-            color=color_map_list[i],
-            # s=[np.sqrt(sup_t) for sup_t in df.loc[df.loc[:, 'cluster'] == i, 'sup_t'].to_list()],
-            s=[precio_rel for precio_rel in (0.1*np.array(df.loc[df.loc[:, 'cluster'] == i, 'precio'].to_list())
-               /
-               np.array(df.loc[df.loc[:, 'cluster'] == i, 'sup_t'].to_list())).tolist()],
-            ew=2,
-            marker=False,
-            symbol=['o' if gas else 'x' for gas in df.loc[df.loc[:, 'cluster'] == i, 'gas']],
-            title='hola', # df.loc[df.loc[:, 'cluster'] == i, 'href'].to_list(),
-            label=df.loc[df.loc[:, 'cluster'] == i, 'cluster'].to_list()
-        )
-    gmap.draw("map.html")
-    chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
-    webbrowser.get(chrome_path).open("file://G:/TRABAJO/Profesional/Python/inmoscrap/map.html")
-    print(df.loc[df.loc[:, 'cluster'] == 26, 'precio'].to_list())
+
+    # res = minimize(fun, x0, method='SLSQP', args=(c, m_, 2), bounds=bounds)
+    #
+    # pass
+#
