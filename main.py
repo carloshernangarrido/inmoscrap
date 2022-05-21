@@ -80,10 +80,23 @@ if __name__ == '__main__':
     xyz_cluster_norm = scaler.transform(xyz_cluster)
     res = minimize(obj_fun, x0=np.array([0, 0.5, 0.5, 0.5, 0.5]), method='Powell',
                    args=(xyz_cluster_norm, 2), bounds=[(-1e6, 1e6), (0, 1), (0, 1), (0, 1), (0, 1)])
-    plt.figure()
-    plt.scatter(xyz_cluster_norm[:, 0], xyz_cluster_norm[:, 1], 100 * xyz_cluster_norm[:, 2])
+    # back to original scale
+    res_x_os = res.x.copy()
+    res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
+    res_x_os[[1, 2, 4]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[4]]).reshape(1, -1))
+    pto_ini = np.array([res.x[1], res.x[2], 0]).reshape(1, -1)
+    pto_fin = np.array([res.x[1], res.x[2], 0]).reshape(1, -1) + np.array([1, res.x[0], 0]).reshape(1, -1)
+    pto_ini_os = scaler.inverse_transform(pto_ini)
+    pto_fin_os = scaler.inverse_transform(pto_fin)
+    res_x_os[0] = (pto_fin_os[0, 1] - pto_ini_os[0, 1]) / (pto_fin_os[0, 0] - pto_ini_os[0, 0])
+    pass
+    fig, ax = plt.subplots(1, 2)
+    ax[0].scatter(xyz_cluster_norm[:, 0], xyz_cluster_norm[:, 1], 100 * xyz_cluster_norm[:, 2])
     x_plot = np.linspace(-1, 1, 100)
-    plt.plot(x_plot, res.x[0] * (x_plot - res.x[1]) + res.x[2])
+    ax[0].plot(x_plot, res.x[0] * (x_plot - res.x[1]) + res.x[2])
+    ax[1].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], 100 * (res.x[4]/res_x_os[4]) * xyz_cluster[:, 2])
+    x_plot = np.linspace(-100, 100, 100)
+    ax[1].plot(x_plot, res_x_os[0] * (x_plot - res_x_os[1]) + res_x_os[2])
     plt.show()
     #
     pass
