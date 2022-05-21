@@ -1,17 +1,14 @@
 # This scrip scraps inmoclick.com
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-
-from data_cure import cure_articles_df, representative_points
+from data_cure import representative_points
 from gmplots import gmplot_df
 from scraper import scrap_now, soup_to_df
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-import matplotlib
-import gmplot
 import webbrowser
-from scipy.optimize import minimize
+from segmented_regression.seg_reg import PWSegReg
+
 
 if __name__ == '__main__':
     scrap_web = False
@@ -44,7 +41,6 @@ if __name__ == '__main__':
     rs = representative_points(df, cluster_labels, coords)
     cluster_labels_list = list(set(cluster_labels))
     # gmplot_df(df, cluster_labels_list=cluster_labels_list)
-
     ##  Segmentation of geographical clusters by relative price
     #     Find the larguest cluster
     cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
@@ -56,36 +52,18 @@ if __name__ == '__main__':
                              np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                              (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                  cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-
-
-    def piece_wise_constant(xy_, m, x_0, y_0, v_below, v_above):
-        x_ = xy_[0]
-        y_ = xy_[1]
-        if y_ - y_0 < m * (x_ - x_0):
-            return v_below
-        else:
-            return v_above
-
-
-    def obj_fun(x, xyz_cluster_, p_norm):
-        z_trial = \
-            np.apply_along_axis(
-                lambda _: piece_wise_constant(_, m=x[0], x_0=x[1], y_0=x[2], v_below=x[3], v_above=x[4]),
-                axis=1, arr=xyz_cluster_[:, 0:2])
-        return np.linalg.norm(z_trial.reshape((-1, 1)) - xyz_cluster_[:, 2].reshape((-1, 1)), p_norm)
-
-
-    scaler = MinMaxScaler()
-    scaler.fit(xyz_cluster)
-    xyz_cluster_norm = scaler.transform(xyz_cluster)
-    res = minimize(obj_fun, x0=np.array([0, 0.5, 0.5, 0.5, 0.5]), method='Powell',
-                   args=(xyz_cluster_norm, 2), bounds=[(-1e6, 1e6), (0, 1), (0, 1), (0, 1), (0, 1)])
-    plt.figure()
-    plt.scatter(xyz_cluster_norm[:, 0], xyz_cluster_norm[:, 1], 100 * xyz_cluster_norm[:, 2])
-    x_plot = np.linspace(-1, 1, 100)
-    plt.plot(x_plot, res.x[0] * (x_plot - res.x[1]) + res.x[2])
+    pwsr = PWSegReg(p_norm=2)
+    pwsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+    pass
+    fig, ax = plt.subplots(1, 1)
+    if type(ax) is not list:
+        ax = [ax]
+    ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], xyz_cluster[:, 2], marker='o')
+    x_plot = np.linspace(-100, 100, 100)
+    ax[0].plot(x_plot, pwsr.m * (x_plot - pwsr.x_0) + pwsr.y_0)
+    ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], pwsr.predict(xyz_cluster[:, [0, 1]]), marker='x')
+    ax[0].set_xlim((min(xyz_cluster[:, 0]), max(xyz_cluster[:, 0])))
+    ax[0].set_ylim((min(xyz_cluster[:, 1]), max(xyz_cluster[:, 1])))
     plt.show()
     #
-    pass
-
 #
