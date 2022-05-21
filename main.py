@@ -28,7 +28,6 @@ if __name__ == '__main__':
     df = soup_to_df(soup)
     del soup
     df = df[1:500, :]
-
     kms_per_radian = 6371.0088
     radius_km = 0.5
     coords = df.loc[:, ['lat', 'lng']].values
