@@ -26,7 +26,7 @@ if __name__ == '__main__':
           f"&precio_dolares_m2%5Bmax%5D=&expensas%5Bmin%5D=&expensas%5Bmax%5D= "
     soup = scrap_now(url, file_name='lotes.html', scrap_web=scrap_web)
     df = soup_to_df(soup)
-    del(soup)
+    del soup
     df = df[1:500, :]
 
     kms_per_radian = 6371.0088
