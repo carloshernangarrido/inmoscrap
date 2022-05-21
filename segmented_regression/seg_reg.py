@@ -35,7 +35,8 @@ def obj_fun(x: List[float], xyz_cluster_: np.array, p_norm: int = 2) -> float:
 
 
 class PWSegReg:
-    """This class allows fiting a piece-wise segmented regression as a scalar function of 2 variables"""
+    """This class allows fiting a piece-wise constant segmented regression as a scalar function of 2 variables
+    TODO: rename this class to PWCSegReg"""
     def __init__(self, p_norm: int=2):
         self.p_norm = p_norm
         self.m = 0.0
@@ -86,3 +87,27 @@ class PWSegReg:
         self.y_0 = res_x_os[2]
         self.v_below = res_x_os[3]
         self.v_above = res_x_os[4]
+
+    def classify_xy(self, xy: List[float]):
+        """
+        Classify whether the point is avobe or below the straight line.
+
+        :param xy: Point as a list of coordinates x and y
+
+        :returns str: Class 0 'below', or 1 'above'
+        """
+        return piece_wise_constant(xy_=xy, m=self.m, x_0=self.x_0, y_0=self.y_0,
+                                   v_below=0, v_above=1)
+
+    def classify(self, xy_matrix: np.array) -> np.array:
+        """
+        Classify the set of points given as a matrix of coordinates x and y.
+
+        :param xy_matrix: A matrix containing a point in each row. Column 0 is x, and column 1 is y.
+
+        :returns class_vector: A list of strings with the predicted classes
+        """
+        class_vector = \
+            np.apply_along_axis(
+                lambda _: self.classify_xy(_), axis=1, arr=xy_matrix)
+        return class_vector
