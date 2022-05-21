@@ -66,20 +66,23 @@ class PWSegReg:
         return z_vector
 
     def fit(self, xy_train, z_train):
-        pass
-
-
-scaler = MinMaxScaler()
-scaler.fit(xyz_cluster)
-xyz_cluster_norm = scaler.transform(xyz_cluster)
-res = minimize(obj_fun, x0=np.array([0, 0.5, 0.5, 0.5, 0.5]), method='Powell',
-               args=(xyz_cluster_norm, 2), bounds=[(-1e6, 1e6), (0, 1), (0, 1), (0, 1), (0, 1)])
-# back to original scale
-res_x_os = res.x.copy()
-res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
-res_x_os[[1, 2, 4]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[4]]).reshape(1, -1))
-pto_ini = np.array([res.x[1], res.x[2], 0]).reshape(1, -1)
-pto_fin = np.array([res.x[1], res.x[2], 0]).reshape(1, -1) + np.array([1, res.x[0], 0]).reshape(1, -1)
-pto_ini_os = scaler.inverse_transform(pto_ini)
-pto_fin_os = scaler.inverse_transform(pto_fin)
-res_x_os[0] = (pto_fin_os[0, 1] - pto_ini_os[0, 1]) / (pto_fin_os[0, 0] - pto_ini_os[0, 0])
+        xyz_train = np.hstack((xy_train, z_train))
+        scaler = MinMaxScaler()
+        scaler.fit(xyz_train)
+        xyz_train_norm = scaler.transform(xyz_train)
+        res = minimize(obj_fun, x0=np.array([0, 0.5, 0.5, 0.5, 0.5]), method='Powell',
+                       args=(xyz_train_norm, 2), bounds=[(-1e6, 1e6), (0, 1), (0, 1), (0, 1), (0, 1)])
+        # back to original scale
+        res_x_os = res.x.copy()
+        res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
+        res_x_os[[1, 2, 4]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[4]]).reshape(1, -1))
+        pto_ini = np.array([res.x[1], res.x[2], 0]).reshape(1, -1)
+        pto_fin = np.array([res.x[1], res.x[2], 0]).reshape(1, -1) + np.array([1, res.x[0], 0]).reshape(1, -1)
+        pto_ini_os = scaler.inverse_transform(pto_ini)
+        pto_fin_os = scaler.inverse_transform(pto_fin)
+        res_x_os[0] = (pto_fin_os[0, 1] - pto_ini_os[0, 1]) / (pto_fin_os[0, 0] - pto_ini_os[0, 0])
+        self.m = res_x_os[0]
+        self.x_0 = res_x_os[1]
+        self.y_0 = res_x_os[2]
+        self.v_below = res_x_os[3]
+        self.v_above = res_x_os[4]
