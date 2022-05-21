@@ -1,6 +1,5 @@
 # This scrip scraps inmoclick.com
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 from data_cure import cure_articles_df, representative_points
 from gmplots import gmplot_df
@@ -11,7 +10,7 @@ from sklearn.cluster import DBSCAN
 import matplotlib
 import gmplot
 import webbrowser
-from scipy.optimize import minimize
+
 
 if __name__ == '__main__':
     scrap_web = False
@@ -57,38 +56,6 @@ if __name__ == '__main__':
                              (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                  cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
 
-
-    def piece_wise_constant(xy_, m, x_0, y_0, v_below, v_above):
-        x_ = xy_[0]
-        y_ = xy_[1]
-        if y_ - y_0 < m * (x_ - x_0):
-            return v_below
-        else:
-            return v_above
-
-
-    def obj_fun(x, xyz_cluster_, p_norm):
-        z_trial = \
-            np.apply_along_axis(
-                lambda _: piece_wise_constant(_, m=x[0], x_0=x[1], y_0=x[2], v_below=x[3], v_above=x[4]),
-                axis=1, arr=xyz_cluster_[:, 0:2])
-        return np.linalg.norm(z_trial.reshape((-1, 1)) - xyz_cluster_[:, 2].reshape((-1, 1)), p_norm)
-
-
-    scaler = MinMaxScaler()
-    scaler.fit(xyz_cluster)
-    xyz_cluster_norm = scaler.transform(xyz_cluster)
-    res = minimize(obj_fun, x0=np.array([0, 0.5, 0.5, 0.5, 0.5]), method='Powell',
-                   args=(xyz_cluster_norm, 2), bounds=[(-1e6, 1e6), (0, 1), (0, 1), (0, 1), (0, 1)])
-    # back to original scale
-    res_x_os = res.x.copy()
-    res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
-    res_x_os[[1, 2, 4]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[4]]).reshape(1, -1))
-    pto_ini = np.array([res.x[1], res.x[2], 0]).reshape(1, -1)
-    pto_fin = np.array([res.x[1], res.x[2], 0]).reshape(1, -1) + np.array([1, res.x[0], 0]).reshape(1, -1)
-    pto_ini_os = scaler.inverse_transform(pto_ini)
-    pto_fin_os = scaler.inverse_transform(pto_fin)
-    res_x_os[0] = (pto_fin_os[0, 1] - pto_ini_os[0, 1]) / (pto_fin_os[0, 0] - pto_ini_os[0, 0])
     pass
     fig, ax = plt.subplots(1, 2)
     ax[0].scatter(xyz_cluster_norm[:, 0], xyz_cluster_norm[:, 1], 100 * xyz_cluster_norm[:, 2])
