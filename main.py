@@ -7,7 +7,7 @@ from scraper import scrap_now, soup_to_df
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import webbrowser
-from segmented_regression.seg_reg import PWCSegReg
+from segmented_regression.seg_reg import PWCSegReg, PWCSegRegMultiple
 
 
 if __name__ == '__main__':
@@ -58,11 +58,17 @@ if __name__ == '__main__':
             pwcsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
             df.loc[cluster.index, 'segment'] = pwcsr.classify(xyz_cluster[:, [0, 1]])
     # gmplot_df(df, plt_flag=False)
-    gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=False)
+    # gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=True)
     # print(df)
+    largest_cluster = cluster_list[np.argmax(cluster_sizes)]
+    cluster = largest_cluster
+    xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
+                             np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
+                             (np.array(cluster.loc[:, 'precio'].values) / np.array(
+                                 cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
+    model = PWCSegRegMultiple(p_norm=2, max_items_per_class=20)
+    model.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
     a = 1
-    # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
-    # cluster = largest_cluster
     # # cluster = cluster_list[0]
     # xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
     #                          np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
