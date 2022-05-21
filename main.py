@@ -7,7 +7,7 @@ from scraper import scrap_now, soup_to_df
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import webbrowser
-from segmented_regression.seg_reg import PWSegReg
+from segmented_regression.seg_reg import PWCSegReg
 
 
 if __name__ == '__main__':
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     soup = scrap_now(url, file_name='lotes.html', scrap_web=scrap_web)
     df = soup_to_df(soup)
     del soup
-    df = df[1:500, :]
+    # df = df.loc[0:100, :]
     kms_per_radian = 6371.0088
     radius_km = 0.5
     coords = df.loc[:, ['lat', 'lng']].values
@@ -42,8 +42,11 @@ if __name__ == '__main__':
     # rs = representative_points(df, cluster_labels, coords)
     # Segmentation of geographical clusters by relative price
     df.insert(loc=len(df.iloc[0, :]), column='segment', value=0)
+    df.insert(loc=len(df.iloc[0, :]), column='cluster_segment', value=df.loc[0, 'cluster'])
     cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
     cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
+    cluster_segment_list = []
+
     max_cluster_size = 20
     for cluster, cluster_size in zip(cluster_list, cluster_sizes):
         if cluster_size > max_cluster_size:
@@ -51,11 +54,11 @@ if __name__ == '__main__':
                                      np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                                      (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                          cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-            pwsr = PWSegReg(p_norm=2)
-            pwsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-            df.loc[cluster.index, 'segment'] = pwsr.classify(xyz_cluster[:, [0, 1]])
-    gmplot_df(df)
-    print(df)
+            pwcsr = PWCSegReg(p_norm=2)
+            pwcsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+            df.loc[cluster.index, 'segment'] = pwcsr.classify(xyz_cluster[:, [0, 1]])
+    gmplot_df(df.loc[0:100, :], plt_flag=True)
+    # print(df)
 
     # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
     # cluster = largest_cluster

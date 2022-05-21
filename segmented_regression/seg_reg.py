@@ -34,9 +34,10 @@ def obj_fun(x: List[float], xyz_cluster_: np.array, p_norm: int = 2) -> float:
     return np.linalg.norm(z_trial.reshape((-1, 1)) - xyz_cluster_[:, 2].reshape((-1, 1)), p_norm)
 
 
-class PWSegReg:
-    """This class allows fiting a piece-wise constant segmented regression as a scalar function of 2 variables
-    TODO: rename this class to PWCSegReg"""
+class PWCSegReg:
+    """
+    This class allows fiting a piece-wise constant segmented regression as a scalar function of 2 variables
+    """
     def __init__(self, p_norm: int=2):
         self.p_norm = p_norm
         self.m = 0.0
