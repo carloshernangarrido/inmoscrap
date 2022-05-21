@@ -1,15 +1,13 @@
 # This scrip scraps inmoclick.com
 import numpy as np
-
-from data_cure import cure_articles_df, representative_points
+from data_cure import representative_points
 from gmplots import gmplot_df
 from scraper import scrap_now, soup_to_df
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-import matplotlib
-import gmplot
 import webbrowser
+from segmented_regression.seg_reg import PWSegReg
 
 
 if __name__ == '__main__':
@@ -43,7 +41,6 @@ if __name__ == '__main__':
     rs = representative_points(df, cluster_labels, coords)
     cluster_labels_list = list(set(cluster_labels))
     # gmplot_df(df, cluster_labels_list=cluster_labels_list)
-
     ##  Segmentation of geographical clusters by relative price
     #     Find the larguest cluster
     cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
@@ -55,16 +52,18 @@ if __name__ == '__main__':
                              np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                              (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                  cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-
+    pwsr = PWSegReg(p_norm=2)
+    pwsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
     pass
-    fig, ax = plt.subplots(1, 2)
-    ax[0].scatter(xyz_cluster_norm[:, 0], xyz_cluster_norm[:, 1], 100 * xyz_cluster_norm[:, 2])
-    x_plot = np.linspace(-1, 1, 100)
-    ax[0].plot(x_plot, res.x[0] * (x_plot - res.x[1]) + res.x[2])
-    ax[1].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], 100 * (res.x[4]/res_x_os[4]) * xyz_cluster[:, 2])
+    fig, ax = plt.subplots(1, 1)
+    if type(ax) is not list:
+        ax = [ax]
+    ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], xyz_cluster[:, 2], marker='o')
     x_plot = np.linspace(-100, 100, 100)
-    ax[1].plot(x_plot, res_x_os[0] * (x_plot - res_x_os[1]) + res_x_os[2])
+    ax[0].plot(x_plot, pwsr.m * (x_plot - pwsr.x_0) + pwsr.y_0)
+    ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], pwsr.predict(xyz_cluster[:, [0, 1]]), marker='x')
+    ax[0].set_xlim((min(xyz_cluster[:, 0]), max(xyz_cluster[:, 0])))
+    ax[0].set_ylim((min(xyz_cluster[:, 1]), max(xyz_cluster[:, 1])))
     plt.show()
     #
-    pass
 #
