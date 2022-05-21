@@ -57,9 +57,10 @@ if __name__ == '__main__':
             pwcsr = PWCSegReg(p_norm=2)
             pwcsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
             df.loc[cluster.index, 'segment'] = pwcsr.classify(xyz_cluster[:, [0, 1]])
-    gmplot_df(df.loc[0:100, :], plt_flag=True)
+    # gmplot_df(df, plt_flag=False)
+    gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=False)
     # print(df)
-
+    a = 1
     # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
     # cluster = largest_cluster
     # # cluster = cluster_list[0]

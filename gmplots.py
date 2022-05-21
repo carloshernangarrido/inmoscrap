@@ -8,7 +8,7 @@ from gmplot import gmplot
 def gmplot_df(df, plt_flag=False):
     cluster_labels_list = list(set(df.loc[:, 'cluster']))
     n_clusters = len(cluster_labels_list)
-    gmap = gmplot.GoogleMapPlotter(df.loc[0, 'lat'], df.loc[0, 'lng'], 13)
+    gmap = gmplot.GoogleMapPlotter(df.iloc[0, 5], df.iloc[0, 6], 13)
     color_map = matplotlib.cm.get_cmap('hsv')
     color_map_list = [matplotlib.colors.rgb2hex(color_map(1. * i / n_clusters)) for i in range(n_clusters)]
     # color_map_list = list(matplotlib.colors.BASE_COLORS.keys())
