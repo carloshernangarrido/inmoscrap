@@ -66,8 +66,17 @@ if __name__ == '__main__':
                              np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                              (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                  cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-    model = PWCSegRegMultiple(p_norm=2, max_items_per_class=20)
+    model = PWCSegRegMultiple(p_norm=2, max_items_per_class=50)
     model.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+    import matplotlib
+    n_classes = max(model.classes_labels) + 1
+    color_map = matplotlib.cm.get_cmap('hsv')
+    color_map_list = [matplotlib.colors.rgb2hex(color_map(1. * i / n_classes)) for i in range(n_classes)]
+    for i_color, class_ in enumerate(model.classes_labels):
+        plt.scatter(xyz_cluster[model.classes == class_, 0], xyz_cluster[model.classes == class_, 1],
+                    s=xyz_cluster[model.classes == class_, 2], color=color_map_list[i_color])
+    plt.show()
+
     a = 1
     # # cluster = cluster_list[0]
     # xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
