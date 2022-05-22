@@ -47,7 +47,7 @@ if __name__ == '__main__':
     cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
     cluster_segment_list = []
 
-    max_cluster_size = 300
+    max_cluster_size = 20
     for cluster, cluster_size in zip(cluster_list, cluster_sizes):
         if cluster_size > max_cluster_size:
             xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
@@ -56,9 +56,12 @@ if __name__ == '__main__':
                                          cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
             pwcsrm = PWCSegRegMultiple(p_norm=2, max_items_per_class=max_cluster_size)
             pwcsrm.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-            # df.loc[cluster.index, 'segment'] = pwcsrm.classes
+            df.loc[cluster.index, 'segment'] = pwcsrm.classes
     # gmplot_df(df, plt_flag=False)
-    gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=True)
+    df_plot = df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :]
+    df_plot = df_plot.iloc[:, :]
+    gmplot_df(df_plot, plt_flag=True)
+    a = 1
     # print(df)
     # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
     # cluster = largest_cluster

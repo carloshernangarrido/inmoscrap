@@ -17,25 +17,27 @@ def gmplot_df(df, plt_flag=False):
     for i_color, i in enumerate(cluster_labels_list):
         # i_color = i - 8*(i // 8)
         # s = [np.sqrt(sup_t) for sup_t in df.loc[df.loc[:, 'cluster'] == i, 'sup_t'].to_list()],
-        s = [precio_rel for precio_rel in (0.1 * np.array(df.loc[df.loc[:, 'cluster'] == i, 'precio'].to_list())
+        precio_rel_list = [precio_rel for precio_rel in (0.1 * np.array(df.loc[df.loc[:, 'cluster'] == i, 'precio'].to_list())
                                            /
                                            np.array(df.loc[df.loc[:, 'cluster'] == i, 'sup_t'].to_list())).tolist()]
         # symbol = ['o' if seg == 0 else 'x' for seg in df.loc[df.loc[:, 'cluster'] == i, 'segment']]
-        symbol = matplotlib.markers.MarkerStyle.filled_markers
+        segment_list = df.loc[df.loc[:, 'cluster'] == i, 'segment'].to_list()
+        symbols = matplotlib.markers.MarkerStyle.filled_markers
         if plt_flag:
-            for i_segment, xy in enumerate(zip(df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
+            for i_item, xy in enumerate(zip(df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
                                                df.loc[df.loc[:, 'cluster'] == i, 'lng'].to_list())):
                 plt.scatter(xy[0], xy[1], color=color_map_list[i_color],
-                            s=10*s[i_segment], marker=symbol[(i_segment + 1) % len(symbol)])
+                            s=10*precio_rel_list[i_item],
+                            marker=symbols[(segment_list[i_item] + 1) % len(symbols)])
         else:
             gmap.scatter(
                 lats=df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
                 lngs=df.loc[df.loc[:, 'cluster'] == i, 'lng'].to_list(),
                 color=color_map_list[i_color],
-                s=s,
+                s=precio_rel_list,
                 ew=2,
                 marker=False,
-                symbol=symbol,
+                symbol=segment_list,
                 title=df.loc[df.loc[:, 'cluster'] == i, 'href'].to_list(),
                 label=df.loc[df.loc[:, 'cluster'] == i, 'cluster'].to_list()
             )

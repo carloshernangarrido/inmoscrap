@@ -92,7 +92,8 @@ class PWCSegReg:
         scaler.fit(xyz_train)
         xyz_train_norm = scaler.transform(xyz_train)
         res = minimize(obj_fun, x0=np.array([0.0, 0.0, 0.0, 0.0, 0.0]), method='Nelder-Mead',
-                       args=(xyz_train_norm, 2), bounds=[(-1.57, 1.57), (-1., 1), (-1., 1.), (-1., 1.), (-1., 1.)])
+                       args=(xyz_train_norm, 2), bounds=[(-1.57, 1.57), (-1., 1), (-1., 1.), (-1., 1.), (-1., 1.)],
+                       options={'fatol': 0.01, 'xatol': 0.01, 'maxfev': 1000, 'maxiter': 100})
         # back to original scale
         res_x_os = res.x.copy()
         res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
