@@ -47,35 +47,36 @@ if __name__ == '__main__':
     cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
     cluster_segment_list = []
 
-    max_cluster_size = 20
+    max_cluster_size = 300
     for cluster, cluster_size in zip(cluster_list, cluster_sizes):
         if cluster_size > max_cluster_size:
             xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
                                      np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                                      (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                          cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-            pwcsr = PWCSegReg(p_norm=2)
-            pwcsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-            df.loc[cluster.index, 'segment'] = pwcsr.classify(xyz_cluster[:, [0, 1]])
+            pwcsrm = PWCSegRegMultiple(p_norm=2, max_items_per_class=max_cluster_size)
+            pwcsrm.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+            # df.loc[cluster.index, 'segment'] = pwcsrm.classes
     # gmplot_df(df, plt_flag=False)
-    # gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=True)
+    gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=True)
     # print(df)
-    largest_cluster = cluster_list[np.argmax(cluster_sizes)]
-    cluster = largest_cluster
-    xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
-                             np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
-                             (np.array(cluster.loc[:, 'precio'].values) / np.array(
-                                 cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-    model = PWCSegRegMultiple(p_norm=2, max_items_per_class=50)
-    model.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-    import matplotlib
-    n_classes = max(model.classes_labels) + 1
-    color_map = matplotlib.cm.get_cmap('hsv')
-    color_map_list = [matplotlib.colors.rgb2hex(color_map(1. * i / n_classes)) for i in range(n_classes)]
-    for i_color, class_ in enumerate(model.classes_labels):
-        plt.scatter(xyz_cluster[model.classes == class_, 0], xyz_cluster[model.classes == class_, 1],
-                    s=xyz_cluster[model.classes == class_, 2], color=color_map_list[i_color])
-    plt.show()
+    # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
+    # cluster = largest_cluster
+    # xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
+    #                          np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
+    #                          (np.array(cluster.loc[:, 'precio'].values) / np.array(
+    #                              cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
+    # model = PWCSegRegMultiple(p_norm=2, max_items_per_class=50)
+    # model.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+    # import matplotlib
+    # n_classes = max(model.classes_labels) + 1
+    # color_map = matplotlib.cm.get_cmap('hsv')
+    # color_map_list = [matplotlib.colors.rgb2hex(color_map(1. * i / n_classes)) for i in range(n_classes)]
+    # for i_color, class_ in enumerate(model.classes_labels):
+    #     plt.scatter(xyz_cluster[model.classes == class_, 0], xyz_cluster[model.classes == class_, 1],
+    #                 s=xyz_cluster[model.classes == class_, 2], color=color_map_list[i_color])
+    # plt.show()
+    # gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=True)
 
     a = 1
     # # cluster = cluster_list[0]

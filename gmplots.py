@@ -20,12 +20,13 @@ def gmplot_df(df, plt_flag=False):
         s = [precio_rel for precio_rel in (0.1 * np.array(df.loc[df.loc[:, 'cluster'] == i, 'precio'].to_list())
                                            /
                                            np.array(df.loc[df.loc[:, 'cluster'] == i, 'sup_t'].to_list())).tolist()]
-        symbol = ['o' if seg == 0 else 'x' for seg in df.loc[df.loc[:, 'cluster'] == i, 'segment']]
+        # symbol = ['o' if seg == 0 else 'x' for seg in df.loc[df.loc[:, 'cluster'] == i, 'segment']]
+        symbol = matplotlib.markers.MarkerStyle.filled_markers
         if plt_flag:
-            for i, xy in enumerate(zip(df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
-                                       df.loc[df.loc[:, 'cluster'] == i, 'lng'].to_list())):
+            for i_segment, xy in enumerate(zip(df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
+                                               df.loc[df.loc[:, 'cluster'] == i, 'lng'].to_list())):
                 plt.scatter(xy[0], xy[1], color=color_map_list[i_color],
-                            s=s[i], marker=symbol[i])
+                            s=10*s[i_segment], marker=symbol[(i_segment + 1) % len(symbol)])
         else:
             gmap.scatter(
                 lats=df.loc[df.loc[:, 'cluster'] == i, 'lat'].to_list(),
