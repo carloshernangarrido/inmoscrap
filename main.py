@@ -7,7 +7,7 @@ from scraper import scrap_now, soup_to_df
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import webbrowser
-from segmented_regression.seg_reg import PWCSegReg
+from segmented_regression.seg_reg import PWCSegReg, PWCSegRegMultiple
 
 
 if __name__ == '__main__':
@@ -17,6 +17,9 @@ if __name__ == '__main__':
     sup_total_max = 10000
     precio_min = 1000
     precio_max = 1000000
+
+    cluster_radius_km = 0.5
+    cluster_segment_max_size = 20
 
     url = f"https://www.inmoclick.com.ar/inmuebles/venta-en-lotes-y-terrenos-en-mendoza?favoritos=0&limit={limit}" \
           f"&prevEstadoMap"f"=&amp;lastZoom=13&precio%5Bmin%5D={precio_min}&precio%5Bmax%5D=" \
@@ -29,10 +32,9 @@ if __name__ == '__main__':
     del soup
     # df = df.loc[0:100, :]
     kms_per_radian = 6371.0088
-    radius_km = 0.5
     coords = df.loc[:, ['lat', 'lng']].values
     # print(coords)
-    db = DBSCAN(eps=radius_km / kms_per_radian, min_samples=1, algorithm='ball_tree', metric='haversine'). \
+    db = DBSCAN(eps=cluster_radius_km / kms_per_radian, min_samples=1, algorithm='ball_tree', metric='haversine'). \
         fit(np.radians(coords))
     cluster_labels = db.labels_
     n_clusters = len(set(cluster_labels))
@@ -43,43 +45,27 @@ if __name__ == '__main__':
     # Segmentation of geographical clusters by relative price
     df.insert(loc=len(df.iloc[0, :]), column='segment', value=0)
     df.insert(loc=len(df.iloc[0, :]), column='cluster_segment', value=df.loc[0, 'cluster'])
+    df.insert(loc=df.shape[1], column='cluster_segment_index', value=0)
     cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
     cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
-    cluster_segment_list = []
-
-    max_cluster_size = 20
     for cluster, cluster_size in zip(cluster_list, cluster_sizes):
-        if cluster_size > max_cluster_size:
+        if cluster_size > cluster_segment_max_size:
             xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
                                      np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
                                      (np.array(cluster.loc[:, 'precio'].values) / np.array(
                                          cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-            pwcsr = PWCSegReg(p_norm=2)
-            pwcsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-            df.loc[cluster.index, 'segment'] = pwcsr.classify(xyz_cluster[:, [0, 1]])
+            pwcsrm = PWCSegRegMultiple(p_norm=2, max_items_per_class=cluster_segment_max_size)
+            pwcsrm.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+            df.loc[cluster.index, 'segment'] = pwcsrm.classes
+    df.loc[:, 'cluster_segment'] = \
+        [str(cluster_) + '-' + str(segment_) for cluster_, segment_ in zip(df.loc[:, 'cluster'], df.loc[:, 'segment'])]
+    cluster_segment_set = set(df.loc[:, 'cluster_segment'])
+    cluster_segment_list = list(cluster_segment_set)
+    cluster_segment_dict = dict(zip(cluster_segment_list, range(len(cluster_segment_list))))
+    df.loc[:, 'cluster_segment_index'] = [cluster_segment_dict[cs] for cs in df.loc[:, 'cluster_segment']]
+    del([cluster_segment_set, cluster_segment_list])
     # gmplot_df(df, plt_flag=False)
-    gmplot_df(df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :], plt_flag=False)
-    # print(df)
     a = 1
-    # largest_cluster = cluster_list[np.argmax(cluster_sizes)]
-    # cluster = largest_cluster
-    # # cluster = cluster_list[0]
-    # xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
-    #                          np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
-    #                          (np.array(cluster.loc[:, 'precio'].values) / np.array(
-    #                              cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-    # pwsr = PWSegReg(p_norm=2)
-    # pwsr.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-    # pass
-    # fig, ax = plt.subplots(1, 1)
-    # if type(ax) is not list:
-    #     ax = [ax]
-    # ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], xyz_cluster[:, 2], marker='o')
-    # x_plot = np.linspace(-100, 100, 100)
-    # ax[0].plot(x_plot, pwsr.m * (x_plot - pwsr.x_0) + pwsr.y_0)
-    # ax[0].scatter(xyz_cluster[:, 0], xyz_cluster[:, 1], pwsr.predict(xyz_cluster[:, [0, 1]]), marker='x')
-    # ax[0].set_xlim((min(xyz_cluster[:, 0]), max(xyz_cluster[:, 0])))
-    # ax[0].set_ylim((min(xyz_cluster[:, 1]), max(xyz_cluster[:, 1])))
-    # plt.show()
-    #
-#
+    # df_plot = df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :]
+    # df_plot = df_plot.iloc[:, :]
+    gmplot_df(df, plt_flag=False)
