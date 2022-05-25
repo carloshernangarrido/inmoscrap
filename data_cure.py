@@ -1,6 +1,10 @@
+import numpy as np
 from geopy.distance import great_circle
 from shapely.geometry import MultiPoint
 import pandas as pd
+from sklearn.cluster import DBSCAN
+
+from segmented_regression.seg_reg import PWCSegRegMultiple
 
 
 def cure_articles_df(articles_df_raw):
@@ -31,3 +35,49 @@ def representative_points(df, cluster_labels, coords):
     lats, lngs = zip(*centermost_points)
     rep_points = pd.DataFrame({'lng': lngs, 'lat': lats})
     return rep_points.apply(lambda row: df[(df['lat'] == row['lat']) & (df['lng'] == row['lng'])].iloc[0], axis=1)
+
+
+def geographical_clusterization(df, cluster_radius_km):
+    """
+    Geographical clusterization of items.
+    :param df:
+    :return df:
+    """
+    kms_per_radian = 6371.0088
+    coords = df.loc[:, ['lat', 'lng']].values
+    db = DBSCAN(eps=cluster_radius_km / kms_per_radian, min_samples=1, algorithm='ball_tree', metric='haversine'). \
+        fit(np.radians(coords))
+    cluster_labels = db.labels_
+    df.insert(loc=len(df.iloc[0, :]), column='cluster', value=cluster_labels)
+    return df
+
+
+def price_segmentation(df, cluster_segment_max_size):
+    """
+    Segmentation of geographical clusters by relative price
+    :param df:
+    :return df, cluster_segment_dict:
+    """
+    cluster_labels = df.loc[:, 'cluster']
+    n_clusters = len(set(cluster_labels))
+    df.insert(loc=len(df.iloc[0, :]), column='segment', value=0)
+    df.insert(loc=len(df.iloc[0, :]), column='cluster_segment', value=df.loc[0, 'cluster'])
+    df.insert(loc=df.shape[1], column='cluster_segment_index', value=0)
+    cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
+    cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
+    for cluster, cluster_size in zip(cluster_list, cluster_sizes):
+        if cluster_size > cluster_segment_max_size:
+            xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
+                                     np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
+                                     (np.array(cluster.loc[:, 'precio'].values) / np.array(
+                                         cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
+            pwcsrm = PWCSegRegMultiple(p_norm=2, max_items_per_class=cluster_segment_max_size)
+            pwcsrm.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
+            df.loc[cluster.index, 'segment'] = pwcsrm.classes
+    df.loc[:, 'cluster_segment'] = \
+        [str(cluster_) + '-' + str(segment_) for cluster_, segment_ in zip(df.loc[:, 'cluster'], df.loc[:, 'segment'])]
+    cluster_segment_set = set(df.loc[:, 'cluster_segment'])
+    cluster_segment_list = list(cluster_segment_set)
+    cluster_segment_dict = dict(zip(cluster_segment_list, range(len(cluster_segment_list))))
+    df.loc[:, 'cluster_segment_index'] = [cluster_segment_dict[cs] for cs in df.loc[:, 'cluster_segment']]
+    return df, cluster_segment_dict

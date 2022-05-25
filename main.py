@@ -1,71 +1,29 @@
 # This scrip scraps inmoclick.com
 import numpy as np
-from data_cure import representative_points
+from data_cure import geographical_clusterization, price_segmentation
 from gmplots import gmplot_df
 from scraper import scrap_now, soup_to_df
-# import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.cluster import DBSCAN
-import webbrowser
-from segmented_regression.seg_reg import PWCSegReg, PWCSegRegMultiple
 
 
 if __name__ == '__main__':
-    scrap_web = False
+    scrap_web_flag = False
     limit = 3000
     sup_total_min = 50
     sup_total_max = 10000
     precio_min = 1000
     precio_max = 1000000
-
     cluster_radius_km = 0.5
-    cluster_segment_max_size = 20
-
+    cluster_segment_max_size = 50
+    file_name = 'lotes.html'
     url = f"https://www.inmoclick.com.ar/inmuebles/venta-en-lotes-y-terrenos-en-mendoza?favoritos=0&limit={limit}" \
           f"&prevEstadoMap"f"=&amp;lastZoom=13&precio%5Bmin%5D={precio_min}&precio%5Bmax%5D=" \
           f"{precio_max}&moneda=2&sup_cubierta%5Bmin%5D=&sup_cubierta%5Bmax%5D" \
           f"=&sup_total%5Bmin%5D={sup_total_min}&sup_total%5Bmax%5D=" \
           f"{sup_total_max}&precio_pesos_m2%5Bmin%5D=&precio_pesos_m2%5Bmax%5D=&precio_dolares_m2%5Bmin%5D=" \
           f"&precio_dolares_m2%5Bmax%5D=&expensas%5Bmin%5D=&expensas%5Bmax%5D= "
-    soup = scrap_now(url, file_name='lotes.html', scrap_web=scrap_web)
-    df = soup_to_df(soup)
-    del soup
-    # df = df.loc[0:100, :]
-    kms_per_radian = 6371.0088
-    coords = df.loc[:, ['lat', 'lng']].values
-    # print(coords)
-    db = DBSCAN(eps=cluster_radius_km / kms_per_radian, min_samples=1, algorithm='ball_tree', metric='haversine'). \
-        fit(np.radians(coords))
-    cluster_labels = db.labels_
-    n_clusters = len(set(cluster_labels))
-    df.insert(loc=len(df.iloc[0, :]), column='cluster', value=cluster_labels)
-    # print(df.loc[:, ['precio', 'sup_t', 'lat', 'lng', 'luz', 'agua', 'gas', 'cluster']])
-    # print(f'{n_clusters} clusters')
-    # rs = representative_points(df, cluster_labels, coords)
-    # Segmentation of geographical clusters by relative price
-    df.insert(loc=len(df.iloc[0, :]), column='segment', value=0)
-    df.insert(loc=len(df.iloc[0, :]), column='cluster_segment', value=df.loc[0, 'cluster'])
-    df.insert(loc=df.shape[1], column='cluster_segment_index', value=0)
-    cluster_list = [df.loc[df.loc[:, 'cluster'] == i, :].copy() for i in range(n_clusters)]
-    cluster_sizes = [len(cluster_) for cluster_ in cluster_list]
-    for cluster, cluster_size in zip(cluster_list, cluster_sizes):
-        if cluster_size > cluster_segment_max_size:
-            xyz_cluster = np.hstack((np.array(cluster.loc[:, 'lat'].values).reshape((-1, 1)),
-                                     np.array(cluster.loc[:, 'lng'].values).reshape((-1, 1)),
-                                     (np.array(cluster.loc[:, 'precio'].values) / np.array(
-                                         cluster.loc[:, 'sup_t'].values)).reshape(-1, 1)))
-            pwcsrm = PWCSegRegMultiple(p_norm=2, max_items_per_class=cluster_segment_max_size)
-            pwcsrm.fit(xy_train=xyz_cluster[:, [0, 1]], z_train=xyz_cluster[:, [2]])
-            df.loc[cluster.index, 'segment'] = pwcsrm.classes
-    df.loc[:, 'cluster_segment'] = \
-        [str(cluster_) + '-' + str(segment_) for cluster_, segment_ in zip(df.loc[:, 'cluster'], df.loc[:, 'segment'])]
-    cluster_segment_set = set(df.loc[:, 'cluster_segment'])
-    cluster_segment_list = list(cluster_segment_set)
-    cluster_segment_dict = dict(zip(cluster_segment_list, range(len(cluster_segment_list))))
-    df.loc[:, 'cluster_segment_index'] = [cluster_segment_dict[cs] for cs in df.loc[:, 'cluster_segment']]
-    del([cluster_segment_set, cluster_segment_list])
-    # gmplot_df(df, plt_flag=False)
+    items_df = soup_to_df(scrap_now(url, file_name=file_name, scrap_web=scrap_web_flag))
+    items_df = geographical_clusterization(items_df, cluster_radius_km)
+    items_df, cluster_segment_dict = price_segmentation(items_df, cluster_segment_max_size)
+    gmplot_df(items_df, plt_flag=False)
     a = 1
-    # df_plot = df.loc[df.loc[:, 'cluster'] == np.argmax(cluster_sizes), :]
-    # df_plot = df_plot.iloc[:, :]
-    gmplot_df(df, plt_flag=False)
+
