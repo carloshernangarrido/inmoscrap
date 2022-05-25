@@ -25,5 +25,6 @@ if __name__ == '__main__':
     items_df = geographical_clusterization(items_df, cluster_radius_km)
     items_df, cluster_segment_dict = price_segmentation(items_df, cluster_segment_max_size)
     gmplot_df(items_df, plt_flag=False)
+
     a = 1
 
