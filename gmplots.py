@@ -14,16 +14,17 @@ def gmplot_df(df, plt_flag=False, as_per='cluster_segment'):
     if plt_flag:
         plt.figure()
     for i_color, i in enumerate(cluster_labels_list):
-        precio_rel_list = [precio_rel for precio_rel in (0.1 * np.array(df.loc[df.loc[:, as_per] == i, 'precio'].to_list())
-                                           /
-                                           np.array(df.loc[df.loc[:, as_per] == i, 'sup_t'].to_list())).tolist()]
+        precio_rel_list = [precio_rel for precio_rel in
+                           (0.1 * np.array(df.loc[df.loc[:, as_per] == i, 'precio'].to_list())
+                            /
+                            np.array(df.loc[df.loc[:, as_per] == i, 'sup_t'].to_list())).tolist()]
         segment_list = df.loc[df.loc[:, as_per] == i, 'segment'].to_list()
         if plt_flag:
             symbols = matplotlib.markers.MarkerStyle.filled_markers
             for i_item, xy in enumerate(zip(df.loc[df.loc[:, as_per] == i, 'lat'].to_list(),
                                             df.loc[df.loc[:, as_per] == i, 'lng'].to_list())):
                 plt.scatter(xy[0], xy[1], color=color_map_list[i_color],
-                            s=10*precio_rel_list[i_item],
+                            s=10 * precio_rel_list[i_item],
                             marker=symbols[(segment_list[i_item] + 1) % len(symbols)])
         else:
             symbols = ['o', 'x', '+']

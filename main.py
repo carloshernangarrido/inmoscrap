@@ -1,9 +1,8 @@
 # This scrip scraps inmoclick.com
-import numpy as np
 from data_cure import geographical_clusterization, price_segmentation
 from gmplots import gmplot_df
 from scraper import scrap_now, soup_to_df
-
+from stat_analysis import stats_from_items
 
 if __name__ == '__main__':
     scrap_web_flag = False
@@ -25,6 +24,7 @@ if __name__ == '__main__':
     items_df = geographical_clusterization(items_df, cluster_radius_km)
     items_df, cluster_segment_dict = price_segmentation(items_df, cluster_segment_max_size)
     gmplot_df(items_df, plt_flag=False)
-
+    gmplot_df(items_df, as_per='cluster', plt_flag=False)
+    # stats_list = stats_from_items(items_df)
     a = 1
 
