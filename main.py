@@ -43,7 +43,7 @@ if __name__ == '__main__':
     print(stats_drop_min_df)
     for i_oportunity in range(3):
         print(stats_list[stats_drop_min_df[i_oportunity, 'cluster_segment_index']].cluster_segment_df_res)
-        gmplot_df(stats_list[409].cluster_segment_df_res, plt_flag=False)
+        gmplot_df(stats_list[i_oportunity].cluster_segment_df_res, plt_flag=False)
     a = 1
 
 
