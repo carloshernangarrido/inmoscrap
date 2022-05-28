@@ -8,7 +8,7 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    scrap_web_flag = True
+    scrap_web_flag = False
     limit = 3000
     sup_total_min = 50
     sup_total_max = 10000
