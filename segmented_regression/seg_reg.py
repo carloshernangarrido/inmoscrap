@@ -91,9 +91,20 @@ class PWCSegReg:
         scaler = MinMaxScaler(feature_range=(-1, 1))
         scaler.fit(xyz_train)
         xyz_train_norm = scaler.transform(xyz_train)
-        res = minimize(obj_fun, x0=np.array([0.0, 0.0, 0.0, 0.0, 0.0]), method='Nelder-Mead',
-                       args=(xyz_train_norm, 2), bounds=[(-1.57, 1.57), (-1., 1), (-1., 1.), (-1., 1.), (-1., 1.)],
-                       options={'fatol': 0.01, 'xatol': 0.01, 'maxfev': 1000, 'maxiter': 100})
+        res_list = []
+        res_f_list = []
+        n_starts = 10
+        for atanm_sample in np.linspace(-1.57, 1.57, num=n_starts):
+            delta_start = (1.57 - (-1.57)) / (2*n_starts)
+            res = minimize(obj_fun, x0=np.array([atanm_sample, 0.0, 0.0, 0.0, 0.0]), method='Nelder-Mead',
+                           args=(xyz_train_norm, 2),
+                           bounds=[(atanm_sample - delta_start, atanm_sample + delta_start), (-1., 1), (-1., 1.),
+                                   (-1., 1.), (-1., 1.)],
+                           options={'fatol': 1e-2, 'xatol': 1e-4, 'maxfev': 100, 'maxiter': 100})
+            res_list.append(res)
+            res_f_list.append(res.fun)
+        # Global minimum
+        res = res_list[np.argmin(res_f_list)]
         # back to original scale
         res_x_os = res.x.copy()
         res_x_os[[1, 2, 3]] = scaler.inverse_transform(np.array([res.x[1], res.x[2], res.x[3]]).reshape(1, -1))
