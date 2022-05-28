@@ -55,6 +55,7 @@ def geographical_clusterization(df, cluster_radius_km):
 def price_segmentation(df, cluster_segment_max_size):
     """
     Segmentation of geographical clusters by relative price
+    :param cluster_segment_max_size:
     :param df:
     :return df, cluster_segment_dict:
     """
