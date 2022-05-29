@@ -2,22 +2,22 @@
 from data_cure import geographical_clusterization, price_segmentation
 from gmplots import gmplot_df
 from scraper import scrap_now, soup_to_df
-from stat_analysis import stats_from_items
+from stat_analysis import stats_from_items, summary_from_stats_list
 import pandas as pd
 import numpy as np
 
-
 if __name__ == '__main__':
-    scrap_web_flag = True
+    scrap_web_flag = False
     limit = 3000
     sup_total_min = 50
     sup_total_max = 10000
     precio_min = 1000
     precio_max = 1000000
     cluster_radius_km = 0.5
+    sup_t_tol = 1.0
     cluster_segment_max_size = 20
     cluster_segment_min_size = 10
-    number_of_oportunities = 5
+    number_of_oportunities = 10
     file_name = 'lotes.html'
     url = f"https://www.inmoclick.com.ar/inmuebles/venta-en-lotes-y-terrenos-en-mendoza?favoritos=0&limit={limit}" \
           f"&prevEstadoMap"f"=&amp;lastZoom=13&precio%5Bmin%5D={precio_min}&precio%5Bmax%5D=" \
@@ -30,25 +30,21 @@ if __name__ == '__main__':
     items_df, cluster_segment_dict = price_segmentation(items_df, cluster_segment_max_size)
     # gmplot_df(items_df, plt_flag=False)
     # gmplot_df(items_df, as_per='cluster', plt_flag=False)
-    stats_list = stats_from_items(items_df, sup_t_tol=0.25)
-    stats_df = pd.DataFrame(np.array([[i for i in range(len(stats_list))],
-                                      [stats.min_price for stats in stats_list],
-                                      [stats.median_price for stats in stats_list],
-                                      [stats.cluster_segment_df_res.shape[0] for stats in stats_list]]).T,
-                            columns=['cluster_segment_index', 'min_price', 'median_price', 'count'])
-    stats_df.insert(loc=stats_df.shape[1], column='rentability', value=stats_df.median_price - stats_df.min_price)
-    stats_df = stats_df.sort_values(by='rentability', ascending=False)
-    stats_drop_min_df = stats_df.drop(stats_df.loc[stats_df.loc[:, 'count'] < cluster_segment_min_size, :].index)
-    stats_drop_min_df = stats_drop_min_df.sort_values(by='rentability', ascending=False)
+    stats_list = stats_from_items(items_df, sup_t_tol=sup_t_tol)
+    stats_summary_df = summary_from_stats_list(stats_list, cluster_segment_min_size=cluster_segment_min_size,
+                                               sort_by='relative_rentability')
     # Visualization
-    print(stats_drop_min_df)
+    print('*** Summary of Oportunities ***')
+    print(stats_summary_df)
     bests_cluster_segment_index = \
-        [int(i) for i in stats_drop_min_df.iloc[0:number_of_oportunities, :]['cluster_segment_index'].values]
-    print('*** Oportunities ***')
+        [int(i) for i in stats_summary_df.iloc[0:number_of_oportunities, :]['cluster_segment_index'].values]
+    print('*** Best Oportunities ***')
+    oportunities = items_df[0:0]
     for oportunity_index in bests_cluster_segment_index:
-        print(f'\ncluster_segment_index = {oportunity_index}')
         oportunity = stats_list[oportunity_index].cluster_segment_df_res
+        oportunities = pd.concat([oportunities, oportunity])
+        print(f'\ncluster_segment_index = {oportunity_index}')
         print(oportunity)
-        gmplot_df(oportunity, plt_flag=False)
-
+    gmplot_df(oportunities, as_per='cluster_segment_index', plt_flag=False)
+    pass
 

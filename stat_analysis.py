@@ -7,20 +7,19 @@ class ClusterSegmentStats:
     Statistics of a cluster_segment.
     """
 
-    def __init__(self, cluster_segment_df: pd.DataFrame, sup_t_tol: float = np.inf):
+    def __init__(self, cluster_segment_df: pd.DataFrame, sup_t_tol: float = np.inf, sorted_by: str = 'precio_rel'):
         """
         Init function for this class.
 
         :param cluster_segment_df: an slice of the data frame containing all the items, for a specific  cluster_segment.
 
         :param sup_t_tol: tolerance in the sup_t (total area of the surface); e.g: if sup_t_tol = 0, only the items with equal sup_t are considered; if sup_t_tol = 1, 100% of dispersion is allowed.
+
+        :param sorted_by: str indicating the column of the cluster_segment_df to sort the values
         """
         self.sup_t_tol = sup_t_tol
         self.cluster_segment_df = cluster_segment_df
         self.sup_t_0 = np.median(self.cluster_segment_df.loc[:, 'sup_t'].values)
-        self.cluster_segment_df.insert(loc=self.cluster_segment_df.shape[1], column='precio_rel', value=
-                                       self.cluster_segment_df.loc[:, 'precio'].values /
-                                       self.cluster_segment_df.loc[:, 'sup_t'].values)
         self.cluster_segment_df_res = self.cluster_segment_df.copy()
         self.restric_to_sup_t_tol()
         if self.cluster_segment_df_res.shape[0] > 0:
@@ -45,6 +44,7 @@ class ClusterSegmentStats:
             self.median_rel_price = 0
             self.arg_min_price = 0
             self.arg_min_rel_price = 0
+        self.cluster_segment_df_res.sort_values(by=sorted_by, inplace=True)
 
     def restric_to_sup_t_tol(self):
         self.cluster_segment_df_res.\
@@ -90,3 +90,21 @@ def stats_from_items(items_df, sup_t_tol: float = np.inf):
         stats.append(ClusterSegmentStats(items_df.loc[items_df.loc[:, 'cluster_segment_index'] == cs_index, :],
                                          sup_t_tol))
     return stats
+
+
+def summary_from_stats_list(stats_list, cluster_segment_min_size=1, sort_by='relative_rentability'):
+    stats_df = pd.DataFrame(np.array([[i for i in range(len(stats_list))],
+                                      [stats.cluster_segment_df_res.shape[0] for stats in stats_list],
+                                      [stats.min_price for stats in stats_list],
+                                      [stats.median_price for stats in stats_list],
+                                      [stats.min_rel_price for stats in stats_list],
+                                      [stats.median_rel_price for stats in stats_list]]).T,
+                            columns=['cluster_segment_index', 'count',
+                                     'min_price', 'median_price', 'min_rel_price', 'median_rel_price'])
+    stats_df.insert(loc=stats_df.shape[1], column='rentability',
+                    value=stats_df.median_price - stats_df.min_price)
+    stats_df.insert(loc=stats_df.shape[1], column='relative_rentability',
+                    value=stats_df.median_rel_price - stats_df.min_rel_price)
+    stats_df = stats_df.drop(stats_df.loc[stats_df.loc[:, 'count'] < cluster_segment_min_size, :].index)
+    return stats_df.sort_values(by=sort_by, ascending=False)
+

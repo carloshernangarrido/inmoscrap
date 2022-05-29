@@ -100,7 +100,7 @@ class PWCSegReg:
                            args=(xyz_train_norm, 2),
                            bounds=[(atanm_sample - delta_start, atanm_sample + delta_start), (-1., 1), (-1., 1.),
                                    (-1., 1.), (-1., 1.)],
-                           options={'fatol': 1e-2, 'xatol': 1e-4, 'maxfev': 100, 'maxiter': 100})
+                           options={'fatol': 1e-2, 'xatol': 1e-4, 'maxfev': 100, 'maxiter': 1000})
             res_list.append(res)
             res_f_list.append(res.fun)
         # Global minimum

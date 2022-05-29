@@ -13,9 +13,14 @@ def cure_articles_df(articles_df_raw):
     articles_df_loc['lat'] = articles_df_loc['lat'].apply(lambda x: float(x))
     articles_df_loc['lng'] = articles_df_loc['lng'].apply(lambda x: float(x))
     articles_df_loc_usd = articles_df_loc[articles_df_loc['precio'].str.contains('US')].copy()
-    articles_df_loc_usd.loc[:, 'precio'] = articles_df_loc_usd.loc[:, 'precio'].apply(lambda x: int(x[4:].replace('.', '')))
-    articles_df_loc_usd.loc[:, 'sup_c'] = articles_df_loc_usd.loc[:, 'sup_c'].apply(lambda x: (int(x) if x.isnumeric() else 0))
+    articles_df_loc_usd.loc[:, 'precio'] = articles_df_loc_usd.loc[:, 'precio'].apply(
+        lambda x: int(x[4:].replace('.', '')))
+    articles_df_loc_usd.loc[:, 'sup_c'] = articles_df_loc_usd.loc[:, 'sup_c'].apply(
+        lambda x: (int(x) if x.isnumeric() else 0))
     articles_df_loc_usd.loc[:, 'sup_t'] = articles_df_loc_usd.loc[:, 'sup_t'].apply(lambda x: int(x))
+    articles_df_loc_usd.insert(loc=articles_df_loc_usd.shape[1], column='precio_rel',
+                               value=
+                               articles_df_loc_usd.loc[:, 'precio'].values / articles_df_loc_usd.loc[:, 'sup_t'].values)
     # print(articles_df_raw.iloc[:, 1:-2])
     # print(articles_df_loc.iloc[:, 1:-2])
     # print(articles_df_loc_usd.iloc[:, 1:-2])
