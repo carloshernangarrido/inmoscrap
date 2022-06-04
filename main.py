@@ -19,8 +19,8 @@ if __name__ == '__main__':
     cluster_radius_km = 0.5
     sup_t_tol = 1.0
     cluster_segment_max_size = 20
-    cluster_segment_min_size = 10
-    number_of_oportunities = 50
+    cluster_segment_min_size = 3
+    number_of_oportunities = 200
     file_name_html = 'lotes.html'
     url = f"https://www.inmoclick.com.ar/inmuebles/venta-en-lotes-y-terrenos-en-mendoza?favoritos=0&limit={limit}" \
           f"&prevEstadoMap"f"=&amp;lastZoom=13&precio%5Bmin%5D={precio_min}&precio%5Bmax%5D=" \

@@ -1,3 +1,6 @@
 /lotes.html
-/map.html
+#/map.html
 /secret.txt
+/items_df.pickle
+/stats_list.pickle
+/stats_summary_df.pickle
