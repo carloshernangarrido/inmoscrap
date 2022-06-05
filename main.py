@@ -9,8 +9,8 @@ import pickle
 
 
 if __name__ == '__main__':
-    scrap_web_flag = True
-    analize_flag = True
+    scrap_web_flag = False
+    analize_flag = False
     limit = 3000
     sup_total_min = 50
     sup_total_max = 10000
@@ -37,25 +37,19 @@ if __name__ == '__main__':
         stats_list = stats_from_items(items_df, sup_t_tol=sup_t_tol)
         stats_summary_df = summary_from_stats_list(stats_list, cluster_segment_min_size=cluster_segment_min_size,
                                                    sort_by='relative_rentability')
-        outfile = open('items_df.pickle', 'wb')
-        pickle.dump(items_df, outfile)
-        outfile.close()
-        outfile = open('stats_list.pickle', 'wb')
-        pickle.dump(stats_list, outfile)
-        outfile.close()
-        outfile = open('stats_summary_df.pickle', 'wb')
-        pickle.dump(stats_summary_df, outfile)
-        outfile.close()
+        with open('items_df.pickle', 'wb') as outfile:
+            pickle.dump(items_df, outfile)
+        with open('stats_list.pickle', 'wb') as outfile:
+            pickle.dump(stats_list, outfile)
+        with open('stats_summary_df.pickle', 'wb') as outfile:
+            pickle.dump(stats_summary_df, outfile)
     else:
-        infile = open('items_df.pickle', 'rb')
-        items_df = pickle.load(infile)
-        infile.close()
-        infile = open('stats_list.pickle', 'rb')
-        stats_list = pickle.load(infile)
-        infile.close()
-        infile = open('stats_summary_df.pickle', 'rb')
-        stats_summary_df = pickle.load(infile)
-        infile.close()
+        with open('items_df.pickle', 'rb') as infile:
+            items_df = pickle.load(infile)
+        with open('stats_list.pickle', 'rb') as infile:
+            stats_list = pickle.load(infile)
+        with open('stats_summary_df.pickle', 'rb') as infile:
+            stats_summary_df = pickle.load(infile)
     # Visualization
     print('*** Summary of Oportunities ***')
     print(stats_summary_df)
