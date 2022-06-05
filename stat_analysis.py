@@ -7,7 +7,9 @@ class ClusterSegmentStats:
     Statistics of a cluster_segment.
     """
 
-    def __init__(self, cluster_segment_df: pd.DataFrame, sup_t_tol: float = np.inf, sorted_by: str = 'precio_rel'):
+    def __init__(self, cluster_segment_df: pd.DataFrame, sup_t_tol: float = np.inf,
+                 res_dict=None,
+                 sorted_by: str = 'precio_rel'):
         """
         Init function for this class.
 
@@ -15,13 +17,19 @@ class ClusterSegmentStats:
 
         :param sup_t_tol: tolerance in the sup_t (total area of the surface); e.g: if sup_t_tol = 0, only the items with equal sup_t are considered; if sup_t_tol = 1, 100% of dispersion is allowed.
 
+        :param res_dict: restrictions of luz, agua, gas to include items in the cluster_segment.
+
         :param sorted_by: str indicating the column of the cluster_segment_df to sort the values
         """
+        if res_dict is None:
+            res_dict = {'luz': False, 'agua': False, 'gas': False}
+        self.res_dict = res_dict
         self.sup_t_tol = sup_t_tol
         self.cluster_segment_df = cluster_segment_df
         self.sup_t_0 = np.median(self.cluster_segment_df.loc[:, 'sup_t'].values)
         self.cluster_segment_df_res = self.cluster_segment_df.copy()
         self.restric_to_sup_t_tol()
+        self.restric_to_res_dict()
         if self.cluster_segment_df_res.shape[0] > 0:
             self.max_price = self.get_max_price()
             self.min_price = self.get_min_price()
@@ -52,6 +60,14 @@ class ClusterSegmentStats:
                                              |
                                              (self.cluster_segment_df_res.sup_t > self.sup_t_0*(1 + self.sup_t_tol))]
                  .index, inplace=True)
+
+    def restric_res_dict(self):
+        pass
+        # self.cluster_segment_df_res.\
+        #     drop(self.cluster_segment_df_res[(self.cluster_segment_df_res.luz)
+        #                                      |
+        #                                      (self.cluster_segment_df_res.sup_t > self.sup_t_0*(1 + self.sup_t_tol))]
+        #          .index, inplace=True)
 
     def get_max_price(self):
         return np.max(self.cluster_segment_df_res.loc[:, 'precio'].values)
@@ -84,11 +100,11 @@ class ClusterSegmentStats:
         return np.argmin(self.cluster_segment_df_res.loc[:, 'precio_rel'].values)
 
 
-def stats_from_items(items_df, sup_t_tol: float = np.inf):
+def stats_from_items(items_df, sup_t_tol: float = np.inf, res_dict: dict = None):
     stats = []
     for cs_index in list(set(items_df.loc[:, 'cluster_segment_index'])):
         stats.append(ClusterSegmentStats(items_df.loc[items_df.loc[:, 'cluster_segment_index'] == cs_index, :],
-                                         sup_t_tol))
+                                         sup_t_tol=sup_t_tol, res_dict=res_dict))
     return stats
 
 

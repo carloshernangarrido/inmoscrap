@@ -18,6 +18,7 @@ if __name__ == '__main__':
     precio_max = 1000000
     cluster_radius_km = 0.5
     sup_t_tol = 1.0
+    res_dict = {'luz': True, 'agua': True, 'gas': True}
     cluster_segment_max_size = 20
     cluster_segment_min_size = 3
     number_of_oportunities = 200
@@ -34,7 +35,7 @@ if __name__ == '__main__':
         items_df, cluster_segment_dict = price_segmentation(items_df, cluster_segment_max_size)
         # gmplot_df(items_df, plt_flag=False)
         # gmplot_df(items_df, as_per='cluster', plt_flag=False)
-        stats_list = stats_from_items(items_df, sup_t_tol=sup_t_tol)
+        stats_list = stats_from_items(items_df, sup_t_tol=sup_t_tol, res_dict=res_dict)
         stats_summary_df = summary_from_stats_list(stats_list, cluster_segment_min_size=cluster_segment_min_size,
                                                    sort_by='relative_rentability')
         with open('items_df.pickle', 'wb') as outfile:
