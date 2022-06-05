@@ -9,8 +9,8 @@ import pickle
 
 
 if __name__ == '__main__':
-    scrap_web_flag = False
-    analize_flag = False
+    scrap_web_flag = True
+    analize_flag = True
     limit = 3000
     sup_total_min = 50
     sup_total_max = 10000
