@@ -55,19 +55,22 @@ class ClusterSegmentStats:
         self.cluster_segment_df_res.sort_values(by=sorted_by, inplace=True)
 
     def restric_to_sup_t_tol(self):
-        self.cluster_segment_df_res.\
-            drop(self.cluster_segment_df_res[(self.cluster_segment_df_res.sup_t < self.sup_t_0*(1 - self.sup_t_tol))
+        self.cluster_segment_df_res. \
+            drop(self.cluster_segment_df_res[(self.cluster_segment_df_res.sup_t < self.sup_t_0 * (1 - self.sup_t_tol))
                                              |
-                                             (self.cluster_segment_df_res.sup_t > self.sup_t_0*(1 + self.sup_t_tol))]
+                                             (self.cluster_segment_df_res.sup_t > self.sup_t_0 * (1 + self.sup_t_tol))]
                  .index, inplace=True)
 
-    def restric_res_dict(self):
-        pass
-        # self.cluster_segment_df_res.\
-        #     drop(self.cluster_segment_df_res[(self.cluster_segment_df_res.luz)
-        #                                      |
-        #                                      (self.cluster_segment_df_res.sup_t > self.sup_t_0*(1 + self.sup_t_tol))]
-        #          .index, inplace=True)
+    def restric_to_res_dict(self):
+        if self.res_dict['luz'] is True:
+            self.cluster_segment_df_res. \
+                drop(self.cluster_segment_df_res[self.cluster_segment_df_res.luz == False].index, inplace=True)
+        if self.res_dict['agua'] is True:
+            self.cluster_segment_df_res. \
+                drop(self.cluster_segment_df_res[self.cluster_segment_df_res.agua == False].index, inplace=True)
+        if self.res_dict['gas'] is True:
+            self.cluster_segment_df_res. \
+                drop(self.cluster_segment_df_res[self.cluster_segment_df_res.gas == False].index, inplace=True)
 
     def get_max_price(self):
         return np.max(self.cluster_segment_df_res.loc[:, 'precio'].values)
@@ -123,4 +126,3 @@ def summary_from_stats_list(stats_list, cluster_segment_min_size=1, sort_by='rel
                     value=stats_df.median_rel_price - stats_df.min_rel_price)
     stats_df = stats_df.drop(stats_df.loc[stats_df.loc[:, 'count'] < cluster_segment_min_size, :].index)
     return stats_df.sort_values(by=sort_by, ascending=False)
-
